@@ -2,10 +2,13 @@
 
 %%%---------------------------Creación de VTs------------------------------------------
 %%% Carga la VT de la clase A
-
-
-
-
+        SetLabel VTA, Libre                                     %Creo la etiqueta para la VT de A
+        SetD Libre, initA            @VTA: dirección de initA   %Pongo en la VTA la dirección de la versión de init que usa A (respetando el offset de init)
+        SetD Libre+1, m1A            @VTA: dirección de m1A     %Pongo en la VTA la dirección de la versión de m1 que usa A (respetando el offset de init)
+        SetD Libre+2, m2A            @VTA: dirección de m2A     %Pongo en la VTA la dirección de la versión de m2 que usa A (respetando el offset de init)
+        SetLibre Libre+4                                        %Actualizo el registro libre según el tamaño de la VTA
+        SetActual Libre                                         %Actualizo el registro actual
+        
 %%% Carga la VT de la clase B
 
 
