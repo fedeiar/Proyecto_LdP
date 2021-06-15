@@ -12,15 +12,20 @@
 %%% Carga la VT de la clase B
         SetLabel VTB, Libre
         SetD Libre, initB           @VTB: dirección de initB   %Pongo en la VTB la dirección de la versión de init que usa B(respetando el offset del init de A ya que estamos redefiniendo)
-
-
+        SetD Libre+1, m1A           @VTB: dirección de m1A     %Pongo en la VTB la dirección de la versión de m1 que se hereda de A
+        SetD Libre+2, m2A           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se hereda de A
+        SetD Libre+3, m2B           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se redefine en B
+        SetLibre libre+4
+        SetActual Libre                                        %Actualizo el registro actual
 
 %%% Carga la VT de la clase C
-
-
-
-
-
+        SetLabel VTC, Libre
+        SetD Libre, initC           @VTC: dirección de initC   %Init C redefinido
+        SetD Libre+1, m1C            @VTC: dirección de m1     %m1 redefinido en C
+        SetD Libre+2, m2A            @VTC: dirección de m1     %m2 heredado de A
+        SetD Libre+3, m2B            @VTC: dirección de m1     %m2 heredado de B
+        SetLibre libre+4                                       %Actualizo el registro libre según el tamaño de la VTB
+        SetActual Libre                                        %Actualizo el registro actual
 
 %%% Carga la VT de la clase Principal
 
@@ -31,51 +36,113 @@
 %%%------------------------------------------------------------------------------------
 %%%----------------------Código de inicialización (llamada a Main)---------------------
 %%% Llama a Main y finaliza
-
-
-
-
+        SetD Libre, pc+5            @PTR    %Guardo puntero de retorno luego de la ejecución del codigo de main que es Halt
+        SetD Libre+1, actual        @ED     %Guardo enlace dinamico %main es estatico asi que no tien this!                                    
+        SetActual Libre                     %Muevo actual para que apunte al RA activo, que acabo de crear para main
+        SetLibre Actual+5                   %Muevo libre segun el tamaño del RA de main (considerando las vars locales)
+        Jump Main                           %Salto al codigo de main
+        Halt                                %Cuando termino de ejecutar main finalizo
 
 %%%------------------------------------------------------------------------------------
 %%%---------------------------Traducción de init de la clase A-------------------------
+initA   %Traduccion de v1 = 3
+        SetH D[Actual+2]+1, 3
+        %Traduccion de v2 = 6
+        SetH D[Actual+2]+2, 6
 
-
-
+        %Regreso al RA de la unidad llamadora   
+        SetLibre actual
+        SetActual D[libre+1]
+        Jump D[libre]
 
 %%%---------------------------Traducción de m1 de la clase A---------------------------
-
-
-
+m1A     Halt
 
 %%%---------------------------Traducción de m2 de la clase A---------------------------
-
-
+m2A     Halt
 
 
 %%%------------------------------------------------------------------------------------
 %%%--------------------------Traducción de init de la clase B--------------------------
+initB   %Traduccion de super.init(); De la clase B
+        SetD libre, pc+6                @PTR            %Guardo el puntero de retorno para volver de initB()
+        SetD libre+1, actual            @ED             %Guardo enlace dinamico para al volver apuntar al RA de la unidad llamadora
+        setD libre+2, D[actual+2]       @This           %Guardo this que en este caso es el objeto referenciado por oA
+        setactual libre                 
+        setlibre libre+3
+        Jump initA
 
+        %Traduccion de v1 = v1*5;
+        SetH D[actual+2]+1, (H[D[actual+2]+1]) * 5
+        %Traduccion de v2 = v2*5;
+        SetH D[actual+2]+2, (H[D[actual+2]+2]) * 5
+        %Traduccion max = 4;
+        SetH D[actual+2]+3, 4
+        
+        %Volviendo al RA llamador
+        SetLibre actual
+        SetActual D[libre+1]
+        Jump D[libre]
 
 
 %%%--------------------------Traducción de m2 de la clase B----------------------------
+m2B     Halt
 
 
-
-%%%------------------------------------------------------------------------------------
 %%%-------------------------Traducción de init de la clase C-----------------------------
+%%%------------------------------------------------------------------------------------
+initC   %Traduccion de super.init(); De la clase C
+        SetD libre, pc+6                @PTR                    %Guardo el puntero de retorno para volver de init()
+        SetD libre+1, actual            @ED                     %Guardo enlace dinamico para al volver apuntar al RA de init() llamador osea el init() de C
+        setD libre+2, D[actual+2]       @This                   %Guardo this que en este caso es el objeto referenciado por oA
+        setactual libre                                         %Muevo actual para que apunte al RA que acabo de crear para init() de B
+        setlibre libre+4                                        %Salto al codigo de init()B por su etiqueta, ya que super me permite saber siempre a cual metodo me refiero
+        Jump initB
 
+        %Traduccion de la instruccion v3= new B();
+        %Creamos el OBJ B y lo guardamos en v3
+        SetD actual+3, PO               @v3 = new B()            %Guardo en v3 una ref al objeto B.
+        SetH PO, VTB                    @VTB                     %Armo la Inst de B en heap.
+        SetPO PO+4
 
+        %Traduccion de la instruccion v3.init();        
+        SetD libre, pc+6                @PTR                    %Guardo el puntero de retorno para volver de init()
+        SetD libre+1, actual            @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
+        setD libre+2, D[actual+3]       @This                   %Guardo this que en este caso es el objeto referenciado por v3
+        setactual libre                                         %Muevo actual para que apunte al RA que acabo de crear para init()
+        setlibre libre+3                                        %Muevo libre segun el tamaño del RA de init()
+        Jump D[H[D[actual+2]+0]+0]                              %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
+
+        %Volviendo al RA llamador
+        SetLibre actual
+        SetActual D[libre+1]
+        Jump D[libre]
 
 
 %%%-------------------------Traducción de m1 de la clase C-------------------------------
-
+m1C     Halt
 
 
 
 %%%------------------------------------------------------------------------------------
 %%%------------------------Traducción de main de la clase Principal--------------------
+        %Creamos el OBJ C y lo guardamos en oA
+Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA una ref al objeto C.
+        SetH PO, VTC                    @VTC                    %Le agrego la VT al nuevo objeto 
+        SetPO PO+5                                              %Incremento el PO segun el tamano de objeto que cree
+        
+        %Traduccion llamada oA.init()
+        SetD Libre, PC+6                @PTR RI oA.init()         %Guardo el puntero de retorno para volver de init()
+        SetD libre+1, actual            @ED                       %Guardo enlace dinamico para al volver apuntar al RA de main      
+        SetD libre+2, D[actual+2]       @This                     %Guardo this que en este caso es el objeto referenciado por oA
+        SetActual libre                                           %Muevo actual para que apunte al RA que acabo de crear para init()
+        SetLibre libre+4                                          %Muevo libre segun el tamaño del RA de init()
+        Jump D[H[D[actual+2]+0]+0]                                %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
+        %Traduccion read para x1, y para x2.
+        setIN actual+3                  @x1 read                %Leo el valor por pantalla y lo guardo en x1
+        setIN actual+4                  @x2 read                %Leo el valor por pantalla y lo guardo en x2
+        
+        %Traduccion oA.m2(x1,x2)
 
-
-
-%%%------------------------------------------------------------------------------------
+        Halt
