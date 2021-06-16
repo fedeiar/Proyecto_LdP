@@ -111,7 +111,7 @@ initC   %Traduccion de super.init(); De la clase C
         setD libre+2, H[D[actual+2]+4]          @This                   %Guardo this que en este caso es el objeto referenciado por v3
         setactual libre                                                 %Muevo actual para que apunte al RA que acabo de crear para init()
         setlibre libre+3                                                %Muevo libre segun el tamaño del RA de init()
-        Jump D[H[H[D[actual+2]+4]+0]+0]                                 %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
+        Jump D[H[D[actual+2]+0]+0]                                      %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Volviendo al RA llamador
         SetLibre actual
