@@ -3,11 +3,11 @@
 %%%---------------------------Creación de VTs------------------------------------------
 %%% Carga la VT de la clase A
         SetLabel VTA, Libre                                     %Creo la etiqueta para la VT de A
-        SetD Libre, initA            @VTA: dirección de initA   %Pongo en la VTA la dirección de la versión de init que usa A 
-        SetD Libre+1, m1A            @VTA: dirección de m1A     %Pongo en la VTA la dirección de la versión de m1 que usa A 
-        SetD Libre+2, m2A            @VTA: dirección de m2A     %Pongo en la VTA la dirección de la versión de m2 que usa A 
-        SetLibre Libre+3                                        %Actualizo el registro libre según el tamaño de la VTA
-        SetActual Libre                                         %Actualizo el registro actual
+        SetD Libre, initA            @VTA: dirección de initA   %Pongo en la VTA la direccion la version de init que usa A (respetando el offset de init)
+        SetD Libre+1, m1A            @VTA: dirección de m1A     %Pongo en la VTA la dirección de la versión de m1 que usa A (respetando el offset de m1)
+        SetD Libre+2, m2A            @VTA: dirección de m2A     %Pongo en la VTA la dirección de la versión de m2 que usa A (respetando el offset de m2)
+        SetLibre Libre+3                                        %Actualizo el registro libre según el tamaño de la VTA 
+        %SetActual Libre                                        %Actualizo el registro actual
 
 %%% Carga la VT de la clase B
         SetLabel VTB, Libre
@@ -15,17 +15,17 @@
         SetD Libre+1, m1A           @VTB: dirección de m1A     %Pongo en la VTB la dirección de la versión de m1 que se hereda de A
         SetD Libre+2, m2A           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se hereda de A
         SetD Libre+3, m2B           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se redefine en B
-        SetLibre libre+4
-        SetActual Libre                                        %Actualizo el registro actual
+        SetLibre libre+4                                       %Actualizo el registro libre según el tamaño de la VTB
+        %SetActual Libre                                        %Actualizo el registro actual
 
 %%% Carga la VT de la clase C
         SetLabel VTC, Libre
-        SetD Libre, initC           @VTC: dirección de initC   %Init C redefinido
-        SetD Libre+1, m1C            @VTC: dirección de m1     %m1 redefinido en C
-        SetD Libre+2, m2A            @VTC: dirección de m1     %m2 heredado de A
-        SetD Libre+3, m2B            @VTC: dirección de m1     %m2 heredado de B
-        SetLibre libre+4                                       %Actualizo el registro libre según el tamaño de la VTB
-        SetActual Libre                                        %Actualizo el registro actual
+        SetD Libre, initC            @VTC: dirección de initC   %Pongo en la VTB la dirección de la versión de init que usa C(respetando el offset del init de B ya que estamos redefiniendo)
+        SetD Libre+1, m1C            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m1 redefinido en C
+        SetD Libre+2, m2A            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m2 heredado de A
+        SetD Libre+3, m2B            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m2 heredado de B
+        SetLibre libre+4                                        %Actualizo el registro libre según el tamaño de la VTB
+        %SetActual Libre                                        %Actualizo el registro actual
 
 %%% Carga la VT de la clase Principal
 
@@ -36,7 +36,7 @@
 %%%------------------------------------------------------------------------------------
 %%%----------------------Código de inicialización (llamada a Main)---------------------
 %%% Llama a Main y finaliza
-        SetD Libre, pc+5            @PTR    %Guardo puntero de retorno luego de la ejecución del codigo de main que es Halt
+        SetD Libre, pc+5            @PTR    %Guardo puntero de retorno luego de la ejecución del codigo de main que me lleva a la instruccion Halt
         SetD Libre+1, actual        @ED     %Guardo enlace dinamico %main es estatico asi que no tien this!                                    
         SetActual Libre                     %Muevo actual para que apunte al RA activo, que acabo de crear para main
         SetLibre Actual+5                   %Muevo libre segun el tamaño del RA de main (considerando las vars locales)
@@ -55,15 +55,7 @@ initA   %Traduccion de v1 = 3
         SetActual D[libre+1]
         Jump D[libre]
 
-%%%---------------------------Traducción de m1 de la clase A---------------------------
-m1A     Halt
-
-%%%---------------------------Traducción de m2 de la clase A---------------------------
-m2A     Halt
-
-
-%%%------------------------------------------------------------------------------------
-%%%--------------------------Traducción de init de la clase B--------------------------
+%%%%--------------------------Traducción de init de la clase B--------------------------
 initB   %Traduccion de super.init(); De la clase B
         SetD libre, pc+6                @PTR            %Guardo el puntero de retorno para volver de initB()
         SetD libre+1, actual            @ED             %Guardo enlace dinamico para al volver apuntar al RA de la unidad llamadora
@@ -85,11 +77,7 @@ initB   %Traduccion de super.init(); De la clase B
         Jump D[libre]
 
 
-%%%--------------------------Traducción de m2 de la clase B----------------------------
-m2B     Halt
 
-
-%%%-------------------------Traducción de init de la clase C-----------------------------
 %%%------------------------------------------------------------------------------------
 initC   %Traduccion de super.init(); De la clase C
         SetD libre, pc+6                @PTR                    %Guardo el puntero de retorno para volver de init()
@@ -118,13 +106,136 @@ initC   %Traduccion de super.init(); De la clase C
         SetActual D[libre+1]
         Jump D[libre]
 
+%%%---------------------------Traducción de m1 de la clase A---------------------------
+m1A     %Traduccion int i = 0;
+        SetD actual+3, 0                @i = 0
+        
+        %Traduccion del while, salto a la condicion.
+        Jump pc+5
+        
+        %inicio del ciclo while
+        %Traduccion de i = i+1;
+        SetD actual+3, D[actual+3]+1
+        %Traduccion de v1 = ((v1-i)*v2)/i;
+        SetH D[actual+2]+1, (((H[D[actual+2]+1]-D[actual+3]) * H[D[actual+2]+2])) / D[actual+3]
+        %SetH D[actual+2]+1, (H[D[actual+2]+1]) * 2
+        %Traduccion if MAL HECHA, PARA REVISAR
+        JumpT pc+2, ( (H[D[actual+2]+1]) + (H[D[actual+2]+2]) + (D[actual+3]) ) > ( (H[D[actual+2]+2]) * (D[actual+3]) )
+        %Traduccion v2 = ((v2+3)*(5+i))/i;
+        SetH D[actual+2]+2, (((H[D[actual+2]+2]) + 3) * (5+(D[actual+3]))) / D[actual+3]
+        %SetH D[actual+2]+2, (H[D[actual+2]+2]) * 3 
+        %Traduccion condicion del while
+        JumpT pc-4, ((H[D[actual+2]+2] > H[D[actual+2]+1]) | (H[D[actual+2]+1]+H[D[actual+2]+2] >= 5)) & (D[actual+3]<50)
+        
+        %fin del while
+        setlibre actual
+        setactual D[libre+1]
+        Jump D[libre]
+
+
+%%%---------------------------Traducción de m2 de la clase A---------------------------
+m2A     %Traduccion v1 = v1+x;
+        SetH D[Actual+2]+1, H[D[actual+2]+1] + D[actual+3]
+        %Traduccion v2 = v2+y;
+        SetH D[actual+2]+2, H[D[actual+2]+2] + D[actual+4]
+        
+        %Traduccion de la instruccion this.m1() en m2A
+        SetD libre, pc+6                   @PTR
+        SetD libre+1, actual               @ED           
+        SetD libre+2, D[actual+2]          @this     
+        SetActual libre
+        SetLibre libre+4
+        Jump D[H[D[actual+2]+0]+1]         
+        
+        SetLibre actual
+        SetD Libre-1, H[D[actual+2]+1] +  H[D[actual+2]+2]
+        SetActual D[libre+1]
+        Jump D[libre]
 
 %%%-------------------------Traducción de m1 de la clase C-------------------------------
-m1C     Halt
+m1C     %Traduccion super.m1()
+        SetD libre, pc+6                      @PTR                    %Guardo el puntero de retorno para volver de 
+        SetD libre+1, actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
+        setD libre+2, D[actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
+        SetActual libre
+        SetLibre libre+4
+        Jump m1A                                                        %Jump al codigo m1A        
 
+        %Traduccion v1 = v1+this.m2(5+v3.m2(v1,v2));
+        %Traduccion v3.m2(v1,v2);
+        SetLibre libre+1                        @lugar retorno
+        SetD libre, pc+8                        @PTR
+        SetD libre+1, actual                    @ED                     %a la unidad llamadora
+        SetD libre+2, H[D[actual+2]+4]          @This
+        SetD libre+3, H[D[actual+2]+1]          @param x = v1 
+        SetD libre+4, H[D[actual+2]+2]          @param y = v2
+        SetActual libre
+        SetLibre libre+5      
+        Jump D[H[D[actual+2]+0]+2]
 
+        %Le sumo 5 al resultado parcial de v3.m2(v1,v2)
+        SetD libre-1, (D[libre-1]) + 5
 
-%%%------------------------------------------------------------------------------------
+        %this.m2(int)
+        SetLibre libre+1                        @lugar retorno
+        SetD libre, pc+7                        @PTR
+        SetD libre+1, actual                    @ED                     %a la unidad llamadora
+        SetD libre+2, D[actual+2]               @This
+        SetD libre+3, D[libre-2]                @param x
+        SetActual libre
+        SetLibre libre+4      
+        Jump D[H[D[actual+2]+0]+3]
+
+        %Traduccion v1+this... lo calculado por partes anteriormente.
+        SetH D[actual+2]+1, H[D[actual+2]+1] + D[libre-1]
+
+        %Volviendo al RA llamador
+        SetLibre actual
+        SetActual D[libre+1]
+        Jump D[libre]
+
+%%%--------------------------Traducción de m2 de la clase B----------------------------
+m2B     %Traduccion if(x < 10 | max == 1) 
+        JumpT pc+10, !( ( (D[actual+3])<10)|((H[D[actual+2]+3]) == 1) )
+            %Traduccion super.m1();
+            SetD libre, pc+6                        @PTR                    %Guardo el puntero de retorno para volver de 
+            SetD libre+1, actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
+            setD libre+2, D[actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
+            SetActual libre
+            SetLibre libre+4
+            Jump m1A
+            
+            %Traduccion max = 4;
+            SetH D[actual+2]+3 , 4
+            
+            %Traduccion return v1+(v2-x)
+            SetD actual-1, (H[D[actual+2]+1]) + ((H[D[actual+2]+2]) - D[actual+3])
+            Jump pc+11
+
+        %Traduccion max = max -1 
+        SetH D[actual+2]+3, (H[D[actual+2]+3]) - 1
+
+        %Traduccion return this.m2(x/10)
+        %this.m2(int)
+        SetLibre libre+1                        @lugar retorno
+        SetD libre, pc+7                        @PTR
+        SetD libre+1, actual                    @ED                     %a la unidad llamadora
+        SetD libre+2, D[actual+2]               @This
+        SetD libre+3, (D[actual+3])/10          @param x
+        SetActual libre
+        SetLibre libre+4      
+        Jump D[H[D[actual+2]+0]+3]
+
+        %Seteando el return
+        SetD actual-1, D[libre-1]
+        
+        %Volviendo al RA llamador
+        SetLibre actual
+        %SetD libre-1, D[actual+3]
+        SetActual D[libre+1]
+        Jump D[libre]
+
+%%%---------------------------Traducción de m2 de la clase main---------------------------  
 %%%------------------------Traducción de main de la clase Principal--------------------
         %Creamos el OBJ C y lo guardamos en oA
 Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA una ref al objeto C.
@@ -140,9 +251,26 @@ Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA un
         Jump D[H[D[actual+2]+0]+0]                                %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Traduccion read para x1, y para x2.
-        setIN actual+3                  @x1 read                %Leo el valor por pantalla y lo guardo en x1
-        setIN actual+4                  @x2 read                %Leo el valor por pantalla y lo guardo en x2
+        setIN actual+3                  @x1 read                  %Leo el valor por pantalla y lo guardo en x1
+        setIN actual+4                  @x2 read                  %Leo el valor por pantalla y lo guardo en x2
         
         %Traduccion oA.m2(x1,x2)
+        %                                @Retorno                  %Dejo espacio para el retorno de m2A
 
+        %Halt  
+        %Traduccion oA.m2(x1,x2)
+        %no se si tengo que guardar un lugar para la ultima instruccion
+        SetLibre libre+1                @lugar retorno
+        SetD libre, pc+8                @PTR
+        SetD libre+1, actual            @ED                        %a la unidad llamadora
+        SetD libre+2, D[actual+2]       @This
+        SetD libre+3, D[actual+3]       @param x
+        SetD libre+4, D[actual+4]       @param Y
+        SetActual libre
+        SetLibre libre+5      
+        Jump D[H[D[actual+2]+0]+2]
+        
+        %Imprimo el valor que retorna m2 correspondinete a sistema.print
+        SetOut D[libre-1]
+        SetLibre actual
         Halt
