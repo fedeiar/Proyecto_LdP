@@ -237,12 +237,12 @@ m2B     %Traduccion if(x < 10 | max == 1)
 
 %%%---------------------------Traducción de m2 de la clase main---------------------------  
 %%%------------------------Traducción de main de la clase Principal--------------------
-        %Creamos el OBJ C y lo guardamos en oA
+        % Creamos el OBJ C y lo guardamos en oA
 Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA una ref al objeto C.
         SetH PO, VTC                    @VTC                    %Le agrego la VT al nuevo objeto 
         SetPO PO+5                                              %Incremento el PO segun el tamano de objeto que cree
         
-        %Traduccion llamada oA.init()
+        % Traduccion llamada oA.init()
         SetD Libre, PC+6                @PTR RI oA.init()         %Guardo el puntero de retorno para volver de init()
         SetD libre+1, actual            @ED                       %Guardo enlace dinamico para al volver apuntar al RA de main      
         SetD libre+2, D[actual+2]       @This                     %Guardo this que en este caso es el objeto referenciado por oA
@@ -250,16 +250,16 @@ Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA un
         SetLibre libre+4                                          %Muevo libre segun el tamaño del RA de init()
         Jump D[H[D[actual+2]+0]+0]                                %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
-        %Traduccion read para x1, y para x2.
+        % Traduccion read para x1, y para x2.
         setIN actual+3                  @x1 read                  %Leo el valor por pantalla y lo guardo en x1
         setIN actual+4                  @x2 read                  %Leo el valor por pantalla y lo guardo en x2
         
-        %Traduccion oA.m2(x1,x2)
+        % Traduccion oA.m2(x1,x2)
         %                                @Retorno                  %Dejo espacio para el retorno de m2A
 
-        %Halt  
-        %Traduccion oA.m2(x1,x2)
-        %no se si tengo que guardar un lugar para la ultima instruccion
+        % Halt  
+        % Traduccion oA.m2(x1,x2)
+        % no se si tengo que guardar un lugar para la ultima instruccion
         SetLibre libre+1                @lugar retorno
         SetD libre, pc+8                @PTR
         SetD libre+1, actual            @ED                        %a la unidad llamadora
@@ -270,7 +270,10 @@ Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA un
         SetLibre libre+5      
         Jump D[H[D[actual+2]+0]+2]
         
-        %Imprimo el valor que retorna m2 correspondinete a sistema.print
+        % Imprimo el valor que retorna m2 correspondiente a sistema.print
         SetOut D[libre-1]
-        SetLibre actual
-        Halt
+
+        % Retorno de Main
+        SetLibre actual                                             %Limpio la memoria del RA de main
+        SetActual D[Libre+1]                                        %Muevo Actual a donde tenia el enlace dinamico
+        Jump D[Libre]                                               %Salto a la direccion de codigo que guarde en el puntero de retorno
