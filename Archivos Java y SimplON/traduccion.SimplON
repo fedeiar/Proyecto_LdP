@@ -51,17 +51,17 @@ initA   %Traduccion de v1 = 3
         SetH D[Actual+2]+2, 6
 
         %Regreso al RA de la unidad llamadora   
-        SetLibre actual
-        SetActual D[libre+1]
-        Jump D[libre]
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
 
 %%%%--------------------------Traducción de init de la clase B--------------------------
 initB   %Traduccion de super.init(); De la clase B
-        SetD libre, pc+6                @PTR            %Guardo el puntero de retorno para volver de initB()
-        SetD libre+1, actual            @ED             %Guardo enlace dinamico para al volver apuntar al RA de la unidad llamadora
-        setD libre+2, D[actual+2]       @This           %Guardo this que en este caso es el objeto referenciado por oA
-        setactual libre                 
-        setlibre libre+3
+        SetD Libre, pc+6                @PTR            %Guardo el puntero de retorno para volver de initB()
+        SetD Libre+1, actual            @ED             %Guardo enlace dinamico para al volver apuntar al RA de la unidad llamadora
+        setD Libre+2, D[actual+2]       @This           %Guardo this que en este caso es el objeto referenciado por oA
+        setactual Libre                 
+        setlibre Libre+3
         Jump initA
 
         %Traduccion de v1 = v1*5;
@@ -78,27 +78,27 @@ initB   %Traduccion de super.init(); De la clase B
 
 
 
-%%%------------------------------------------------------------------------------------
+%%%---------------------------Traduccion de init de la clase C--------------------------
 initC   %Traduccion de super.init(); De la clase C
         SetD libre, pc+6                @PTR                    %Guardo el puntero de retorno para volver de init()
         SetD libre+1, actual            @ED                     %Guardo enlace dinamico para al volver apuntar al RA de init() llamador osea el init() de C
-        setD libre+2, D[actual+2]       @This                   %Guardo this que en este caso es el objeto referenciado por oA
-        setactual libre                                         %Muevo actual para que apunte al RA que acabo de crear para init() de B
-        setlibre libre+4                                        %Salto al codigo de init()B por su etiqueta, ya que super me permite saber siempre a cual metodo me refiero
-        Jump initB
+        SetD libre+2, D[actual+2]       @This                   %Guardo this que en este caso es el objeto referenciado por oA
+        SetActual libre                                         %Muevo actual para que apunte al RA que acabo de crear para init() de B
+        SetLibre libre+4                                        
+        Jump initB                                              %Salto al codigo de init() de B por su etiqueta, ya que super me permite saber siempre a cual metodo me refiero
 
         %Traduccion de la instruccion v3= new B();
         %Creamos el OBJ B y lo guardamos en v3
         SetH D[actual+2]+4, PO               @v3 = new B()            %Guardo en v3 una ref al objeto B.
         SetH PO, VTB                         @VTB                     %Armo la Inst de B en heap.
-        SetPO PO+4
+        SetPO PO+4                                                    %Incremento el PO segun el tamano de objeto que cree
 
         %Traduccion de la instruccion v3.init();        
         SetD libre, pc+6                        @PTR                    %Guardo el puntero de retorno para volver de init()
         SetD libre+1, actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
-        setD libre+2, H[D[actual+2]+4]          @This                   %Guardo this que en este caso es el objeto referenciado por v3
-        setactual libre                                                 %Muevo actual para que apunte al RA que acabo de crear para init()
-        setlibre libre+3                                                %Muevo libre segun el tamaño del RA de init()
+        SetD libre+2, H[D[actual+2]+4]          @This                   %Guardo this que en este caso es el objeto referenciado por v3
+        SetActual libre                                                 %Muevo actual para que apunte al RA que acabo de crear para init()
+        SetLibre libre+3                                                %Muevo libre segun el tamaño del RA de init()
         Jump D[H[D[actual+2]+0]+0]                                      %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Volviendo al RA llamador
@@ -108,112 +108,112 @@ initC   %Traduccion de super.init(); De la clase C
 
 %%%---------------------------Traducción de m1 de la clase A---------------------------
 m1A     %Traduccion int i = 0;
-        SetD actual+3, 0                @i = 0
+        SetD Actual+3, 0                @i = 0
         
         %Traduccion del while, salto a la condicion.
-        Jump pc+5
+        Jump PC+5
         
         %inicio del ciclo while
         %Traduccion de i = i+1;
-        SetD actual+3, D[actual+3]+1
+        SetD Actual+3, D[Actual+3]+1
         %Traduccion de v1 = ((v1-i)*v2)/i;
-        SetH D[actual+2]+1, (((H[D[actual+2]+1]-D[actual+3]) * H[D[actual+2]+2])) / D[actual+3]
+        SetH D[Actual+2]+1, (((H[D[Actual+2]+1]-D[Actual+3]) * H[D[Actual+2]+2])) / D[Actual+3]
         %SetH D[actual+2]+1, (H[D[actual+2]+1]) * 2
         %Traduccion if MAL HECHA, PARA REVISAR
-        JumpT pc+2, ( (H[D[actual+2]+1]) + (H[D[actual+2]+2]) + (D[actual+3]) ) > ( (H[D[actual+2]+2]) * (D[actual+3]) )
+        JumpT pc+2, ( (H[D[Actual+2]+1]) + (H[D[Actual+2]+2]) + (D[Actual+3]) ) > ( (H[D[Actual+2]+2]) * (D[Actual+3]) )
         %Traduccion v2 = ((v2+3)*(5+i))/i;
         SetH D[actual+2]+2, (((H[D[actual+2]+2]) + 3) * (5+(D[actual+3]))) / D[actual+3]
         %SetH D[actual+2]+2, (H[D[actual+2]+2]) * 3 
         %Traduccion condicion del while
-        JumpT pc-4, ((H[D[actual+2]+2] > H[D[actual+2]+1]) | (H[D[actual+2]+1]+H[D[actual+2]+2] >= 5)) & (D[actual+3]<50)
+        JumpT pc-4, ((H[D[Actual+2]+2] > H[D[Actual+2]+1]) | (H[D[Actual+2]+1]+H[D[Actual+2]+2] >= 5)) & (D[Actual+3]<50)
         
         %fin del while
-        setlibre actual
-        setactual D[libre+1]
-        Jump D[libre]
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
 
 
 %%%---------------------------Traducción de m2 de la clase A---------------------------
 m2A     %Traduccion v1 = v1+x;
-        SetH D[Actual+2]+1, H[D[actual+2]+1] + D[actual+3]
+        SetH D[Actual+2]+1, H[D[Actual+2]+1] + D[Actual+3]
         %Traduccion v2 = v2+y;
-        SetH D[actual+2]+2, H[D[actual+2]+2] + D[actual+4]
+        SetH D[actual+2]+2, H[D[Actual+2]+2] + D[Actual+4]
         
         %Traduccion de la instruccion this.m1() en m2A
-        SetD libre, pc+6                   @PTR
-        SetD libre+1, actual               @ED           
-        SetD libre+2, D[actual+2]          @this     
-        SetActual libre
-        SetLibre libre+4
-        Jump D[H[D[actual+2]+0]+1]         
+        SetD Libre, pc+6                   @PTR
+        SetD Libre+1, Actual               @ED           
+        SetD Libre+2, D[Actual+2]          @this     
+        SetActual Libre
+        SetLibre Libre+4
+        Jump D[H[D[Actual+2]+0]+1]         
         
-        SetLibre actual
-        SetD Libre-1, H[D[actual+2]+1] +  H[D[actual+2]+2]
-        SetActual D[libre+1]
-        Jump D[libre]
+        SetLibre Actual
+        SetD Libre-1, H[D[Actual+2]+1] +  H[D[Actual+2]+2]
+        SetActual D[Libre+1]
+        Jump D[Libre]
 
 %%%-------------------------Traducción de m1 de la clase C-------------------------------
 m1C     %Traduccion super.m1()
-        SetD libre, pc+6                      @PTR                    %Guardo el puntero de retorno para volver de 
-        SetD libre+1, actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
-        setD libre+2, D[actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
-        SetActual libre
-        SetLibre libre+4
+        SetD Libre, pc+6                      @PTR                    %Guardo el puntero de retorno para volver de 
+        SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
+        setD Libre+2, D[Actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
+        SetActual Libre
+        SetLibre Libre+4
         Jump m1A                                                        %Jump al codigo m1A        
 
         %Traduccion v1 = v1+this.m2(5+v3.m2(v1,v2));
         %Traduccion v3.m2(v1,v2);
-        SetLibre libre+1                        @lugar retorno
-        SetD libre, pc+8                        @PTR
-        SetD libre+1, actual                    @ED                     %a la unidad llamadora
-        SetD libre+2, H[D[actual+2]+4]          @This
-        SetD libre+3, H[D[actual+2]+1]          @param x = v1 
-        SetD libre+4, H[D[actual+2]+2]          @param y = v2
-        SetActual libre
-        SetLibre libre+5      
-        Jump D[H[D[actual+2]+0]+2]
+        SetLibre Libre+1                        @lugar retorno
+        SetD Libre, pc+8                        @PTR
+        SetD Libre+1, Actual                    @ED                     %a la unidad llamadora
+        SetD Libre+2, H[D[Actual+2]+4]          @This
+        SetD Libre+3, H[D[Actual+2]+1]          @param x = v1 
+        SetD Libre+4, H[D[Actual+2]+2]          @param y = v2
+        SetActual Libre
+        SetLibre Libre+5      
+        Jump D[H[D[Actual+2]+0]+2]
 
         %Le sumo 5 al resultado parcial de v3.m2(v1,v2)
-        SetD libre-1, (D[libre-1]) + 5
+        SetD Libre-1, (D[Libre-1]) + 5
 
         %this.m2(int)
-        SetLibre libre+1                        @lugar retorno
-        SetD libre, pc+7                        @PTR
-        SetD libre+1, actual                    @ED                     %a la unidad llamadora
-        SetD libre+2, D[actual+2]               @This
-        SetD libre+3, D[libre-2]                @param x
-        SetActual libre
-        SetLibre libre+4      
-        Jump D[H[D[actual+2]+0]+3]
+        SetLibre Libre+1                        @lugar retorno
+        SetD Libre, pc+7                        @PTR
+        SetD Libre+1, Actual                    @ED                     %a la unidad llamadora
+        SetD Libre+2, D[Actual+2]               @This
+        SetD Libre+3, D[Libre-2]                @param x
+        SetActual Libre
+        SetLibre Libre+4      
+        Jump D[H[D[Actual+2]+0]+3]
 
         %Traduccion v1+this... lo calculado por partes anteriormente.
-        SetH D[actual+2]+1, H[D[actual+2]+1] + D[libre-1]
+        SetH D[Actual+2]+1, H[D[Actual+2]+1] + D[Libre-1]
 
         %Volviendo al RA llamador
-        SetLibre actual
-        SetActual D[libre+1]
-        Jump D[libre]
+        SetLibre Actual
+        SetActual D[Libre+1]
+        Jump D[Libre]
 
 %%%--------------------------Traducción de m2 de la clase B----------------------------
 m2B     %Traduccion if(x < 10 | max == 1) 
         JumpT pc+10, !( ( (D[actual+3])<10)|((H[D[actual+2]+3]) == 1) )
             %Traduccion super.m1();
-            SetD libre, pc+6                        @PTR                    %Guardo el puntero de retorno para volver de 
-            SetD libre+1, actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
-            setD libre+2, D[actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
-            SetActual libre
-            SetLibre libre+4
+            SetD Libre, pc+6                        @PTR                    %Guardo el puntero de retorno para volver de 
+            SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
+            setD Libre+2, D[Actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
+            SetActual Libre
+            SetLibre Libre+4
             Jump m1A
             
             %Traduccion max = 4;
-            SetH D[actual+2]+3 , 4
+            SetH D[Actual+2]+3 , 4
             
             %Traduccion return v1+(v2-x)
-            SetD actual-1, (H[D[actual+2]+1]) + ((H[D[actual+2]+2]) - D[actual+3])
+            SetD Actual-1, (H[D[Actual+2]+1]) + ((H[D[Actual+2]+2]) - D[Actual+3])
             Jump pc+11
 
         %Traduccion max = max -1 
-        SetH D[actual+2]+3, (H[D[actual+2]+3]) - 1
+        SetH D[Actual+2]+3, (H[D[Actual+2]+3]) - 1
 
         %Traduccion return this.m2(x/10)
         %this.m2(int)
@@ -247,7 +247,7 @@ Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA un
         SetD libre+1, actual            @ED                       %Guardo enlace dinamico para al volver apuntar al RA de main      
         SetD libre+2, D[actual+2]       @This                     %Guardo this que en este caso es el objeto referenciado por oA
         SetActual libre                                           %Muevo actual para que apunte al RA que acabo de crear para init()
-        SetLibre libre+4                                          %Muevo libre segun el tamaño del RA de init()
+        SetLibre libre+3                                          %Muevo libre segun el tamaño del RA de init()
         Jump D[H[D[actual+2]+0]+0]                                %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         % Traduccion read para x1, y para x2.
@@ -269,9 +269,11 @@ Main    SetD actual+2, PO               @oA = new C()           %Guardo en oA un
         SetActual libre
         SetLibre libre+5      
         Jump D[H[D[actual+2]+0]+2]
-        
-        % Imprimo el valor que retorna m2 correspondiente a sistema.print
-        SetOut D[libre-1]
+
+        %Traduccion del Sistema.print
+        SetOut D[libre-1]                                           %Muestro por pantalla el valor que retorna m2
+
+        SetLibre Libre-1                                            %Ya se uso el valor de retorno, asi que se libera
 
         % Retorno de Main
         SetLibre actual                                             %Limpio la memoria del RA de main
