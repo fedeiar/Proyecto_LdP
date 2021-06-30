@@ -84,7 +84,7 @@ initC   %Traduccion de super.init(); De la clase C
         SetD libre+1, actual            @ED                     %Guardo enlace dinamico para al volver apuntar al RA de init() llamador osea el init() de C
         SetD libre+2, D[actual+2]       @This                   %Guardo this que en este caso es el objeto referenciado por oA
         SetActual libre                                         %Muevo actual para que apunte al RA que acabo de crear para init() de B
-        SetLibre libre+4                                        
+        SetLibre libre+3                                        
         Jump initB                                              %Salto al codigo de init() de B por su etiqueta, ya que super me permite saber siempre a cual metodo me refiero
 
         %Traduccion de la instruccion v3= new B();
