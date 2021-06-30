@@ -203,14 +203,14 @@ m1C
 %%%--------------------------Traducción de m2 de la clase B----------------------------
 m2B     
         SetLibre Actual+4                                                    %Muevo libre segun el tamaño del RA de m2B() teniendo en cuenta parametros formales
-        %Traduccion if(x < 10 | max == 1) 
-        JumpT m2Bendif, !( ((D[actual+3])<10) | ((H[D[actual+2]+3]) == 1) )
+        %Traduccion if(x < 10 | max == 1).
+        JumpT m2BendIf, !( ((D[actual+3])<10) | ((H[D[actual+2]+3]) == 1) )  %if(x < 10 | max == 1): si es verdadero no salto, sino salto a la etiqueta m2BendIf
             %Traduccion super.m1();
-            SetD Libre, PC+5                        @PTR                    %Guardo el puntero de retorno para volver de 
-            SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
-            SetD Libre+2, D[Actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
-            SetActual Libre
-            Jump m1A
+            SetD Libre, PC+5                        @PTR                     %Guardo el puntero de retorno para volver de super.m1 (m1A)
+            SetD Libre+1, Actual                    @ED                      %Guardo enlace dinamico para al volver apuntar al RA de m2B
+            SetD Libre+2, D[Actual+2]               @This                    %Guardo this que en este caso es el objeto que invocó a m2() de B
+            SetActual Libre                                                  %Muevo actual para que apunte al RA que acabo de crear para m1
+            Jump m1A                                                         %Salto al código de m1 del padre de B (m1A)
             
             %Traduccion max = 4;
             SetH D[Actual+2]+3 , 4
@@ -220,7 +220,7 @@ m2B
             Jump m2Bret
 
         
-m2Bendif
+m2BendIf
         %Traduccion max = max -1 
         SetH D[Actual+2]+3, (H[D[Actual+2]+3]) - 1
 
@@ -246,11 +246,12 @@ m2Bret
 %%%---------------------------Traducción de m2 de la clase main---------------------------  
 %%%------------------------Traducción de main de la clase Principal--------------------
 Main      
-        SetLibre Actual+5                                        %Muevo libre segun el tamaño del RA de main() considerando variables locales
+        SetLibre Actual+5                                         %Muevo libre segun el tamaño del RA de main() considerando variables locales
+
         % Creamos el OBJ C y lo guardamos en oA
-        SetD actual+2, PO               @oA = new C()           %Guardo en oA una ref al objeto C.
-        SetH PO, VTC                    @VTC                    %Le agrego la VT al nuevo objeto 
-        SetPO PO+5                                              %Incremento el PO segun el tamano de objeto que cree
+        SetD actual+2, PO               @oA = new C()             %Guardo en oA una ref al objeto C.
+        SetH PO, VTC                    @VTC                      %Le agrego la VT al nuevo objeto 
+        SetPO PO+5                                                %Incremento el PO segun el tamano de objeto que cree
         
         % Traduccion llamada oA.init()
         SetD Libre, PC+5                @PTR RI oA.init()         %Guardo el puntero de retorno para volver de init()
@@ -265,21 +266,21 @@ Main
         
         
         % Traduccion oA.m2(x1,x2)
-        SetLibre Libre+1                @lugar retorno             %Dejo espacio para el valor de retorno de m2A
-        SetD Libre, PC+7                @PTR
-        SetD Libre+1, Actual            @ED                        %a la unidad llamadora
-        SetD Libre+2, D[Actual+2]       @This
-        SetD Libre+3, D[Actual+3]       @param x
-        SetD Libre+4, D[Actual+4]       @param Y
-        SetActual Libre
-        Jump D[H[D[Actual+2]+0]+2]
+        SetLibre Libre+1                @lugar retorno            %Dejo espacio para el valor de retorno de m2()
+        SetD Libre, PC+7                @PTR                      %Guardo el puntero de retorno para volver de m2()
+        SetD Libre+1, Actual            @ED                       %Guardo el enlace dinamico para al volver apuntar al RA de main
+        SetD Libre+2, D[Actual+2]       @This                     %Guardo this que en este caso es el objeto referenciado por oA
+        SetD Libre+3, D[Actual+3]       @param x                  %Paso por parametro x1
+        SetD Libre+4, D[Actual+4]       @param y                  %Paso por parametro x2
+        SetActual Libre                                           %Muevo actual para que apunte al RA que acabo de crear para m2()
+        Jump D[H[D[Actual+2]+0]+2]                                %Salto al codigo de m2() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Traduccion del Sistema.print
-        SetOut D[Libre-1]                                           %Muestro por pantalla el valor que retorna m2
+        SetOut D[Libre-1]                                         %Muestro por pantalla el valor que retorna m2 que esta en el lugar que reserve para el retorno
 
-        SetLibre Libre-1                                            %Ya se uso el valor de retorno, asi que se libera
+        SetLibre Libre-1                                          %Ya se uso el valor de retorno, asi que se libera
 
         % Retorno de Main
-        SetLibre Actual                                             %Limpio la memoria del RA de main
-        SetActual D[Libre+1]                                        %Muevo Actual a donde tenia el enlace dinamico
-        Jump D[Libre]                                               %Salto a la direccion de codigo que guarde en el puntero de retorno
+        SetLibre Actual                                           %Limpio la memoria del RA de main
+        SetActual D[Libre+1]                                      %Muevo Actual a donde tenia el enlace dinamico
+        Jump D[Libre]                                             %Salto a la direccion de codigo que guarde en el puntero de retorno
