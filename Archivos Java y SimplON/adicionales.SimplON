@@ -35,9 +35,8 @@
 %%%----------------------Código de inicialización (llamada a Main)---------------------
 %%% Llama a Main y finaliza
 
-        SetD Libre, pc+5            @PTR     %Guardo puntero de retorno luego de la ejecución del codigo de main que me lleva a la instruccion Halt
-        SetD Libre+1, actual        @ED      %Guardo enlace dinamico %main es estatico asi que no tien this!                                    
-        SetD Libre+2, -1            @oA=null %Indico que la variable oA se encuentra sin instanciar
+        SetD Libre, pc+4            @PTR     %Guardo puntero de retorno luego de la ejecución del codigo de main que me lleva a la instruccion Halt
+        SetD Libre+1, actual        @ED      %Guardo enlace dinamico %main es estatico asi que no tien this!
         SetActual Libre                      %Muevo actual para que apunte al RA activo, que acabo de crear para main
         Jump Main                            %Salto al codigo de main
         Halt                                 %Cuando termino de ejecutar main finalizo
@@ -96,10 +95,8 @@ initC
         SetH PO, VTB                         @VTB                     %Armo la Inst de B en heap.
         SetPO PO+4                                                    %Incremento el PO segun el tamano de objeto que cree
 
-        %Traduccion de la instruccion v3.init();        
-        %Checkeo de nullpoint                                
-        JumpT Null, H[D[actual+2]+4] == -1                              %Chequeo si la referencia al objeto v3 es nula
-
+        %Traduccion de la instruccion v3.init();                               
+        JumpT Null, H[D[actual+2]+4] == -1                              %Chequeo que v3 no tenga una referencia nula
         SetD Libre, PC+5                        @PTR                    %Guardo el puntero de retorno para volver de init()
         SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
         SetD Libre+2, H[D[Actual+2]+4]          @This                   %Guardo this que en este caso es el objeto referenciado por v3
@@ -181,9 +178,7 @@ m1C
         SetD Libre-1, H[D[Actual+2]+1]                                  % guardamos el valor de v1 por si es modificado por la llamada
 
         %Traduccion v3.m2(v1,v2);
-        %Checkeo de nullpoint
-        JumpT Null, H[D[actual+2]+4] == -1                              %Chequeo si la referencia al objeto v3 es nula
-        
+        JumpT Null, H[D[actual+2]+4] == -1                              %Chequeo que v3 no tenga una referencia nula
         SetLibre Libre+1                        @lugar retorno
         SetD Libre, PC+7                        @PTR
         SetD Libre+1, Actual                    @ED                     %a la unidad llamadora
@@ -262,18 +257,17 @@ m2Bret
 %%%---------------------------Traducción de m2 de la clase main---------------------------  
 %%%------------------------Traducción de main de la clase Principal--------------------
 Main      
+        SetD Libre+2, -1                @oA=null                  %Indico que la variable local oA se encuentra sin instanciar
         SetLibre Actual+5                                         %Muevo libre segun el tamaño del RA de main() considerando variables locales
-
+        
         % Creamos el OBJ C y lo guardamos en oA
         SetD actual+2, PO               @oA = new C()             %Guardo en oA una ref al objeto C.
         SetH PO, VTC                    @VTC                      %Le agrego la VT al nuevo objeto 
-        SetH PO+4, -1                   @v3=null                  %Indico que la variable v3 se encuentra sin instanciar
+        SetH PO+4, -1                   @v3=null                  %Indico que la variable v3 de C se encuentra sin instanciar
         SetPO PO+5                                                %Incremento el PO segun el tamano de objeto que cree
         
-        % Traduccion llamada oA.init()
-        %Checkeo de nullpoint                                     %Chequeo si la referencia al objeto oA es nula
-        JumpT Null, D[actual+2] == -1
-
+        % Traduccion llamada oA.init()                               
+        JumpT Null, D[actual+2] == -1                             %Chequeo que oA no tenga una referencia nula
         SetD Libre, PC+5                @PTR RI oA.init()         %Guardo el puntero de retorno para volver de init()
         SetD Libre+1, Actual            @ED                       %Guardo enlace dinamico para al volver apuntar al RA de main      
         SetD Libre+2, D[Actual+2]       @This                     %Guardo this que en este caso es el objeto referenciado por oA
@@ -286,9 +280,7 @@ Main
         
         
         % Traduccion oA.m2(x1,x2)
-        %Checkeo de nullpoint
-        JumpT Null, D[actual+2] == -1                             %Chequeo si la referencia al objeto oA es nula
-
+        JumpT Null, D[actual+2] == -1                             %Chequeo que oA no tenga una referencia nula
         SetLibre Libre+1                @lugar retorno            %Dejo espacio para el valor de retorno de m2()
         SetD Libre, PC+7                @PTR                      %Guardo el puntero de retorno para volver de m2()
         SetD Libre+1, Actual            @ED                       %Guardo el enlace dinamico para al volver apuntar al RA de main
@@ -321,9 +313,9 @@ Main
 %%%------------------------Traducción del codigo asignacionCondicional--------------------
 aCond   SetD actual+3, 11                 @valor = 11             %Asgino el valor 11 a la variable valor
         jumpT pc+3 , D[actual+3] > 8
-	SetD actual+4, 0                  @resultado = 0          %El resultado es 0 si la asignacion condicional fue false
-	Jump pc+2
-        SetD actual+4, 1                  @resultado = 1          %El resultado es 1 si la asignacion condicional fue true
+	    SetD actual+4, 0                  @resultado = 0          %El resultado es 0 si la expresion condicional de la asignacion condicional fue false
+	    Jump pc+2
+        SetD actual+4, 1                  @resultado = 1          %El resultado es 1 si la expresion condicional de la asignacion condicional fue true
 
         %Volviendo al RA llamador
         SetLibre actual
