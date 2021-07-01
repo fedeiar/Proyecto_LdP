@@ -3,26 +3,26 @@
 %%%---------------------------Creación de VTs------------------------------------------
 %%% Carga la VT de la clase A
         SetLabel VTA, Libre                                     %Creo la etiqueta para la VT de A
-        SetD Libre, initA            @VTA: dirección de initA   %Pongo en la VTA la direccion la version de init que usa A (respetando el offset de init)
-        SetD Libre+1, m1A            @VTA: dirección de m1A     %Pongo en la VTA la dirección de la versión de m1 que usa A (respetando el offset de m1)
-        SetD Libre+2, m2A            @VTA: dirección de m2A     %Pongo en la VTA la dirección de la versión de m2 que usa A (respetando el offset de m2)
+        SetD Libre, initA            @VTA: direccion de initA   %Pongo en la VTA la direccion la version de init que usa A
+        SetD Libre+1, m1A            @VTA: dirección de m1A     %Pongo en la VTA la dirección de la versión de m1 que usa A
+        SetD Libre+2, m2A            @VTA: dirección de m2A     %Pongo en la VTA la dirección de la versión de m2 que usa A
         SetLibre Libre+3                                        %Actualizo el registro libre según el tamaño de la VTA
 
 %%% Carga la VT de la clase B
-        SetLabel VTB, Libre
+        SetLabel VTB, Libre                                    %Creo la etiqueta para la VT de B
         SetD Libre, initB           @VTB: dirección de initB   %Pongo en la VTB la dirección de la versión de init que usa B(respetando el offset del init de A ya que estamos redefiniendo)
         SetD Libre+1, m1A           @VTB: dirección de m1A     %Pongo en la VTB la dirección de la versión de m1 que se hereda de A
         SetD Libre+2, m2A           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se hereda de A
-        SetD Libre+3, m2B           @VTB: dirección de m2A     %Pongo en la VTB la dirección de la versión de m2 que se redefine en B
+        SetD Libre+3, m2B           @VTB: dirección de m2B     %Pongo en la VTB la dirección de la versión de m2 que se sobrecarga en B
         SetLibre libre+4                                       %Actualizo el registro libre según el tamaño de la VTB
 
 %%% Carga la VT de la clase C
-        SetLabel VTC, Libre
-        SetD Libre, initC            @VTC: dirección de initC   %Pongo en la VTB la dirección de la versión de init que usa C(respetando el offset del init de B ya que estamos redefiniendo)
-        SetD Libre+1, m1C            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m1 redefinido en C
-        SetD Libre+2, m2A            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m2 heredado de A
-        SetD Libre+3, m2B            @VTC: dirección de m1      %Pongo en la VTC la direccion de la version de m2 heredado de B
-        SetLibre libre+4                                        %Actualizo el registro libre según el tamaño de la VTB
+        SetLabel VTC, Libre                                     %Creo la etiqueta para la VT de C
+        SetD Libre, initC            @VTC: dirección de initC   %Pongo en la VTC la dirección de la versión de init que usa C(respetando el offset del init de B ya que estamos redefiniendo)
+        SetD Libre+1, m1C            @VTC: dirección de m1C     %Pongo en la VTC la direccion de la version de m1 que usa C(respetando el offset del m1 de A ya que estamos redefiniendo)
+        SetD Libre+2, m2A            @VTC: dirección de m2A     %Pongo en la VTC la direccion de la version de m2 que se hereda de A
+        SetD Libre+3, m2B            @VTC: dirección de m2B     %Pongo en la VTC la direccion de la version de m2 que se hereda de B
+        SetLibre libre+4                                        %Actualizo el registro libre según el tamaño de la VTC
 
 
 %%% Carga la VT de la clase Principal
@@ -151,54 +151,56 @@ m2A
         SetActual Libre
         Jump D[H[D[Actual+2]+0]+1]         
         
+        SetD Actual-1, H[D[Actual+2]+1] +  H[D[Actual+2]+2]
+
         SetLibre Actual
-        SetD Libre-1, H[D[Actual+2]+1] +  H[D[Actual+2]+2]
         SetActual D[Libre+1]
         Jump D[Libre]
 
 %%%-------------------------Traducción de m1 de la clase C-------------------------------
 m1C      
-        SetLibre Actual+3                                                %Muevo libre segun el tamaño del RA de m1C()
+        SetLibre Actual+3                                               %Muevo libre segun el tamaño del RA de m1C()
         %Traduccion super.m1()
-        SetD Libre, PC+5                        @PTR                    %Guardo el puntero de retorno para volver de 
-        SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de main
-        SetD Libre+2, D[Actual+2]               @This                   %Guardo la referencia a la instancia del objeto en heap.
-        SetActual Libre
-        Jump m1A                                                        %Jump al codigo m1A        
+        SetD Libre, PC+5                        @PTR                    %Guardo el puntero de retorno para volver de m1() (m1 de B)
+        SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de m1C
+        SetD Libre+2, D[Actual+2]               @This                   %Guardo this que en este caso es el objeto que invoco a m1C
+        SetActual Libre                                                 %Muevo actual para que apunte al RA que acabo de crear para m1() de B
+        Jump m1A                                                        %Salto al codigo m1A        
 
         %Traduccion v1 = v1+this.m2(5+v3.m2(v1,v2));
-        SetLibre Libre+1                                                % Hago lugar para el valor de v1
-        SetD Libre-1, H[D[Actual+2]+1]                                  % guardamos el valor de v1 por si es modificado por la llamada
+
+        SetLibre Libre+1                                                %Dejo espacio para el valor de v1
+        SetD Libre-1, H[D[Actual+2]+1]                                  %Guardamos el valor de v1 por si es modificado por las llamadas siguientes
 
         %Traduccion v3.m2(v1,v2);
-        SetLibre Libre+1                        @lugar retorno
-        SetD Libre, PC+7                        @PTR
-        SetD Libre+1, Actual                    @ED                     %a la unidad llamadora
-        SetD Libre+2, H[D[Actual+2]+4]          @This
-        SetD Libre+3, H[D[Actual+2]+1]          @param x = v1 
-        SetD Libre+4, H[D[Actual+2]+2]          @param y = v2
-        SetActual Libre
-        Jump D[H[D[Actual+2]+0]+2]
+        SetLibre Libre+1                        @lugar retorno          %Dejo espacio para el valor de retorno de v3.m2()
+        SetD Libre, PC+7                        @PTR                    %Guardo el puntero de retorno para volver de v3.m2()
+        SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de m1C
+        SetD Libre+2, H[D[Actual+2]+4]          @This                   %Guardo this que en este caso es el objeto que invoco a m1C
+        SetD Libre+3, H[D[Actual+2]+1]          @param x                %Paso por parametro v1
+        SetD Libre+4, H[D[Actual+2]+2]          @param y                %Paso por parametro v2
+        SetActual Libre                                                 %Muevo actual para que apunte al RA que acabo de crear para m2
+        Jump D[H[D[Actual+2]+0]+2]                                      %Salto al codigo de m2 según la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Le sumo 5 al resultado parcial de v3.m2(v1,v2)
-        SetD Libre-1, (D[Libre-1]) + 5
+        SetD Libre-1, (D[Libre-1]) + 5                                  %Incremento en 5 el valor que obtuve de la llamada a m2(int, int)
 
         %this.m2(int)
-        SetLibre Libre+1                        @lugar retorno
-        SetD Libre, pc+6                        @PTR
-        SetD Libre+1, Actual                    @ED                     %a la unidad llamadora
-        SetD Libre+2, D[Actual+2]               @This
-        SetD Libre+3, D[Libre-2]                @param x
-        SetActual Libre
-        Jump D[H[D[Actual+2]+0]+3]
+        SetLibre Libre+1                        @lugar retorno          %Dejo espacio para el valor de retorno de this.m2()
+        SetD Libre, pc+6                        @PTR                    %Guardo el puntero de retorno para volver de this.m2()
+        SetD Libre+1, Actual                    @ED                     %Guardo enlace dinamico para al volver apuntar al RA de m1C
+        SetD Libre+2, D[Actual+2]               @This                   %Guardo this que en este caso es el objeto que invoco a m1C
+        SetD Libre+3, D[Libre-2]                @param x                %Paso por parametro el valor 5+v3.m2(v1,v2) obtenido anteriormente
+        SetActual Libre                                                 %Muevo actual para que apunte al RA que acabo de crear para this.m2
+        Jump D[H[D[Actual+2]+0]+3]                                      %Salto al codigo de this.m2 segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         %Traduccion v1+this... lo calculado por partes anteriormente.
-        SetH D[Actual+2]+1, D[Libre-3] + D[Libre-1]
+        SetH D[Actual+2]+1, D[Libre-3] + D[Libre-1]   @v1 = v1 + this.m2(...)   %Guardo el valor de la suma entre v1 y el valor que retorno la llamada a this.m2() en v1
 
         %Volviendo al RA llamador
-        SetLibre Actual
-        SetActual D[Libre+1]
-        Jump D[Libre]
+        SetLibre Actual                                                         %Limpio la memoria del RA de m1C
+        SetActual D[Libre+1]                                                    %Muevo actual a donde tenia el enlace dinamico
+        Jump D[Libre]                                                           %Salto a la direccion de codigo que guarde en el puntero de retorno
 
 %%%--------------------------Traducción de m2 de la clase B----------------------------
 m2B     
@@ -206,42 +208,41 @@ m2B
         %Traduccion if(x < 10 | max == 1).
         JumpT m2BendIf, !( ((D[actual+3])<10) | ((H[D[actual+2]+3]) == 1) )  %if(x < 10 | max == 1): si es verdadero no salto, sino salto a la etiqueta m2BendIf
             %Traduccion super.m1();
-            SetD Libre, PC+5                        @PTR                     %Guardo el puntero de retorno para volver de super.m1 (m1A)
+            SetD Libre, PC+5                        @PTR                     %Guardo el puntero de retorno para volver de super.m1 (m1 de A)
             SetD Libre+1, Actual                    @ED                      %Guardo enlace dinamico para al volver apuntar al RA de m2B
-            SetD Libre+2, D[Actual+2]               @This                    %Guardo this que en este caso es el objeto que invocó a m2() de B
-            SetActual Libre                                                  %Muevo actual para que apunte al RA que acabo de crear para m1
+            SetD Libre+2, D[Actual+2]               @This                    %Guardo this que en este caso es el objeto que invocó a m2B
+            SetActual Libre                                                  %Muevo actual para que apunte al RA que acabo de crear para m1() de A
             Jump m1A                                                         %Salto al código de m1 del padre de B (m1A)
             
             %Traduccion max = 4;
-            SetH D[Actual+2]+3 , 4
+            SetH D[Actual+2]+3 , 4                 @max = 4                  %Guardo el valor 4 en la variable de instancia max
             
             %Traduccion return v1+(v2-x)
-            SetD Actual-1, (H[D[Actual+2]+1]) + ((H[D[Actual+2]+2]) - D[Actual+3])
-            Jump m2Bret
+            SetD Actual-1, (H[D[Actual+2]+1]) + ((H[D[Actual+2]+2]) - D[Actual+3])  @return v1+(v2-x)  %Uso this del RA para acceder a los valores de v1 y v2, y guardo el resultado de la operacion en el espacio reservado para el retorno
+            Jump m2Bret                                                                                %Salto a la etiqueta donde está el código para hacer el retorno del método.
 
         
 m2BendIf
         %Traduccion max = max -1 
-        SetH D[Actual+2]+3, (H[D[Actual+2]+3]) - 1
+        SetH D[Actual+2]+3, (H[D[Actual+2]+3]) - 1        @max = max - 1            %Uso this del RA para acceder a la variable de instancia max, tanto para usar su valor como para luego asignarle otro.
 
         %Traduccion return this.m2(x/10)
-        %this.m2(int)
-        SetLibre libre+1                        @lugar retorno
-        SetD libre, pc+6                        @PTR
-        SetD libre+1, actual                    @ED                     %a la unidad llamadora
-        SetD libre+2, D[actual+2]               @This
-        SetD libre+3, (D[actual+3])/10          @param x
-        SetActual libre    
-        Jump D[H[D[actual+2]+0]+3]
+        SetLibre Libre+1                        @lugar retorno          %Como m2() devuelve algo reservo lugar para ese valor
+        SetD Libre, PC+6                        @PTR                    %Guardo el puntero de retorno para volver de m2()
+        SetD Libre+1, Actual                    @ED                     %Guardo el enlace dinamico para al volver apuntar al RA de m2B
+        SetD Libre+2, D[Actual+2]               @This                   %Guardo this que en este caso es el objeto que invocó a m2() de B
+        SetD Libre+3, (D[Actual+3])/10          @param x                %Paso por parametro x/10
+        SetActual Libre                                                 %Muevo actual para que apunte al RA que acabo de crear para m2()
+        Jump D[H[D[Actual+2]+0]+3]                                      %Salto al código de m2 según la VT del objeto receptor (el this del RA que acabo de crear)
 
-        %Seteando el return
-        SetD actual-1, D[libre-1]
+        %Seteando el valor de retorno
+        SetD Actual-1, D[Libre-1]               @return this.m2(x/10)   %Guardo en el espacio que reservé (i.e: actual-1) para el valor de retorno de m2B el valor que obtuve de la reciente llamada a m2() (que está en Libre-1)
         
         %Volviendo al RA llamador
 m2Bret        
-        SetLibre actual
-        SetActual D[libre+1]
-        Jump D[libre]
+        SetLibre Actual                                                 %Limpio la memoria del RA de m2B
+        SetActual D[Libre+1]                                            %Muevo actual a donde tenia el enlace dinamico
+        Jump D[Libre]                                                   %Salto a la direccion de codigo que guarde en el puntero de retorno
 
 %%%---------------------------Traducción de m2 de la clase main---------------------------  
 %%%------------------------Traducción de main de la clase Principal--------------------
@@ -261,8 +262,8 @@ Main
         Jump D[H[D[Actual+2]+0]+0]                                %Salto al codigo de init() segun la VT del objeto receptor (el this del RA que acabo de crear)
 
         % Traduccion read para x1, y para x2.
-        setIn Actual+3                  @x1 read                  %Leo el valor por pantalla y lo guardo en x1
-        setIn Actual+4                  @x2 read                  %Leo el valor por pantalla y lo guardo en x2
+        setIn Actual+3                  @x1=read()                %Leo el valor por pantalla y lo guardo en x1
+        setIn Actual+4                  @x2=read()                %Leo el valor por pantalla y lo guardo en x2
         
         
         % Traduccion oA.m2(x1,x2)

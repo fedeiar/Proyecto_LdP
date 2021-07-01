@@ -6,10 +6,10 @@ public class Principal {
         oA.init();
         x1 = Sistema.read(); x2 = Sistema.read();
         Sistema.print(oA.m2(x1,x2));
-        asignacionCondicional();
+        //asignacionCondicional();
     }
 
-    private void asignacionCondicional(){
+    private static void asignacionCondicional(){
         int valor = 11;
 	    int result = (valor > 8) ? 1 : 0;
     }
