@@ -119,7 +119,7 @@ m1A
         SetD Actual+3, 0                @i = 0
         
         %Traduccion del while, salto a la condicion.
-        Jump m1AwhileEnd
+        Jump m1AFirstConditionWhile
         m1AwhileBegin    
             %inicio del ciclo while
             %Traduccion de i = i+1;
@@ -128,13 +128,18 @@ m1A
             SetH D[Actual+2]+1, (((H[D[Actual+2]+1]-D[Actual+3]) * H[D[Actual+2]+2])) / D[Actual+3]
 
             %Traduccion de if(v1+v2+i > v2*i)
-            JumpT m1AwhileEnd, ( (H[D[Actual+2]+1]) + (H[D[Actual+2]+2]) + (D[Actual+3]) ) > ( (H[D[Actual+2]+2]) * (D[Actual+3]) )
+            JumpT m1AFirstConditionWhile, ( (H[D[Actual+2]+1]) + (H[D[Actual+2]+2]) + (D[Actual+3]) ) > ( (H[D[Actual+2]+2]) * (D[Actual+3]) )
             %Traduccion v2 = ((v2+3)*(5+i))/i;
             SetH D[actual+2]+2, (((H[D[actual+2]+2]) + 3) * (5+(D[actual+3]))) / D[actual+3]
             %Traduccion condicion del while
-        m1AwhileEnd
-        JumpT m1AwhileBegin, ((H[D[Actual+2]+2] > H[D[Actual+2]+1]) | (H[D[Actual+2]+1]+H[D[Actual+2]+2] >= 5)) & (D[Actual+3]<50)
+        m1AFirstConditionWhile
+        JumpT m1ASecondConditionWhile , (H[D[Actual+2]+2] > H[D[Actual+2]+1])
+        JumpT m1ASecondConditionWhile , ((H[D[Actual+2]+1]+H[D[Actual+2]+2] >= 5))
+        Jump m1AEndWhile
+        m1ASecondConditionWhile
+        JumpT m1AwhileBegin, (D[Actual+3]<50)
         
+        m1AEndWhile
         %fin del while
         SetLibre Actual
         SetActual D[Libre+1]
@@ -212,10 +217,12 @@ m1C
 %%%--------------------------Traducción de m2 de la clase B----------------------------
 m2B     
         SetLibre Actual+4                                                    %Muevo libre segun el tamaño del RA de m2B() teniendo en cuenta parametros formales
-        %Traduccion if(x < 10 | max == 1).
-        JumpT m2BendIf, !( ((D[actual+3])<10) | ((H[D[actual+2]+3]) == 1) )  %if(x < 10 | max == 1): si es verdadero no salto, sino salto a la etiqueta m2BendIf
-            %Traduccion super.m1();
-            SetD Libre, PC+5                        @PTR                     %Guardo el puntero de retorno para volver de super.m1 (m1A)
+        %Traduccion if(x < 10 | max == 1) pero con cortocircuito
+        JumpT m2BodyIf, (D[actual+3]) < 10                                       %if x < 10 : si es verdadero salto a la etiqueta m2BodyIf sin chequear el resto de las expresiones
+        JumpT m2BodyIf, (H[D[actual+2]+3]) == 1                                  %if max == 1: si es verdadero salto a la etiqueta m2BodyIf sin chequear el resto de las expresiones
+        Jump m2BendIf
+        %Traduccion super.m1();
+m2BodyIf    SetD Libre, PC+5                        @PTR                     %Guardo el puntero de retorno para volver de super.m1 (m1A)
             SetD Libre+1, Actual                    @ED                      %Guardo enlace dinamico para al volver apuntar al RA de m2B
             SetD Libre+2, D[Actual+2]               @This                    %Guardo this que en este caso es el objeto que invocó a m2() de B
             SetActual Libre                                                  %Muevo actual para que apunte al RA que acabo de crear para m1
